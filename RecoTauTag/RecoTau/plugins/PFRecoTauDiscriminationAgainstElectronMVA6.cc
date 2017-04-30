@@ -33,7 +33,9 @@ class PFRecoTauDiscriminationAgainstElectronMVA6 : public PFTauDiscriminationPro
       category_output_(0)
   {
     mva_ = new AntiElectronIDMVA6(cfg);
-
+    
+    usefixPhiAtEcalEntrance_ = cfg.getParameter<bool>("usefixPhiAtEcalEntrance");
+   
     srcGsfElectrons_ = cfg.getParameter<edm::InputTag>("srcGsfElectrons");
     GsfElectrons_token = consumes<reco::GsfElectronCollection>(srcGsfElectrons_);
 
@@ -71,6 +73,8 @@ private:
   std::auto_ptr<PFTauDiscriminator> category_output_;
 
   int verbosity_;
+  
+  bool usefixPhiAtEcalEntrance_;
 };
 
 void PFRecoTauDiscriminationAgainstElectronMVA6::beginEvent(const edm::Event& evt, const edm::EventSetup& es)
@@ -147,7 +151,7 @@ double PFRecoTauDiscriminationAgainstElectronMVA6::discriminate(const PFTauRef& 
 	double deltaREleTau = deltaR(theGsfElectron->p4(), thePFTauRef->p4());
 	deltaRDummy = deltaREleTau;
 	if ( deltaREleTau < 0.3 ) {
-	  double mva_match = mva_->MVAValue(*thePFTauRef, *theGsfElectron);
+	  double mva_match = mva_->MVAValue(*thePFTauRef, *theGsfElectron, usefixPhiAtEcalEntrance_);
 	  bool hasGsfTrack = thePFTauRef->leadPFChargedHadrCand()->gsfTrackRef().isNonnull();
 	  if ( !hasGsfTrack )
             hasGsfTrack = theGsfElectron->gsfTrack().isNonnull();
@@ -184,7 +188,7 @@ double PFRecoTauDiscriminationAgainstElectronMVA6::discriminate(const PFTauRef& 
     } // end of loop over electrons
 
     if ( !isGsfElectronMatched ) {
-      mvaValue = mva_->MVAValue(*thePFTauRef);
+      mvaValue = mva_->MVAValue(*thePFTauRef, usefixPhiAtEcalEntrance_);
       bool hasGsfTrack = thePFTauRef->leadPFChargedHadrCand()->gsfTrackRef().isNonnull();
       
       //// Veto taus that go to Ecal crack
